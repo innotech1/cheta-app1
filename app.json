@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Chẹta",
+    "slug": "cheta-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/images/logo.png",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cheta.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#4A1942"
+      },
+      "package": "com.cheta.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/images/logo.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 220,
+          "backgroundColor": "#4A1942"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chẹta needs access to your photos and videos to share media in posts and messages.",
+          "cameraPermission": "Chẹta needs access to your camera to capture photos and videos directly.",
+          "microphonePermission": "Chẹta needs access to your microphone when recording videos."
+        }
+      ]
+    ]
+  }
+}
