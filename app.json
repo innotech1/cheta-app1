@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/logo.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cheta.app"
@@ -16,7 +18,11 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#4A1942"
       },
-      "package": "com.cheta.app"
+      "package": "com.cheta.app",
+       "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -39,6 +45,11 @@
           "microphonePermission": "Chẹta needs access to your microphone when recording videos."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0732e0bb-3153-4d1b-8979-8cc5ce420f40"
+      }
+    }
   }
 }
