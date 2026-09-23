@@ -11,9 +11,9 @@ import {
   Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { useAuth } from '../../context/AuthContext';
-import { colors, spacing, radius } from '../../theme/colors';
+import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { useAuth } from '../context/AuthContext';
+import { colors, spacing, radius } from '../theme/colors';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -57,7 +57,7 @@ export default function SignupScreen({ navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Image
-        source={require('../../../assets/images/logo.png')}
+        source={require('../../assets/images/logo.png')}
         style={styles.logoImage}
         resizeMode="contain"
       />
