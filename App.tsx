@@ -29,3 +29,4 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+// cache-buster 2026-09-24T10:54:46.2472788+01:00

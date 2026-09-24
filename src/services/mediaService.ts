@@ -1,15 +1,3 @@
-import { API_BASE_URL } from '../config/api';
-import { getAuthToken } from './apiClient';
-import { ApiError } from './apiClient';
-
-export type UploadedMedia = { url: string; mediaType: 'image' | 'video' };
-
-/**
- * Uploads a picked image/video (given its local file:// URI, from
- * expo-image-picker) to the backend and returns the hosted URL + type.
- * Uses a raw fetch with FormData rather than apiRequest, since that wrapper
- * always sends JSON — file uploads need multipart/form-data instead.
- */
 export async function uploadMedia(
   uri: string,
   type: 'image' | 'video',
@@ -18,9 +6,6 @@ export async function uploadMedia(
   const token = getAuthToken();
   const formData = new FormData();
 
-  // React Native's fetch accepts this special { uri, name, type } shape for
-  // file fields — it is NOT a real Blob, but RN's FormData polyfill knows
-  // how to turn it into one.
   const inferredExt = uri.split('.').pop()?.toLowerCase() || (type === 'video' ? 'mp4' : 'jpg');
   const mimeType =
     type === 'video'
@@ -37,23 +22,29 @@ export async function uploadMedia(
     type: mimeType,
   } as unknown as Blob);
 
+  // Single-slash join
+  const base = API_BASE_URL.replace(/\/+$/, '');
+  const url = `${base}/media/upload`;
+
+  console.log('[Cheta] Uploading to:', url);
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/media/upload`, {
+    response = await fetch(url, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        // Deliberately NOT setting Content-Type — fetch sets the correct
-        // multipart/form-data boundary automatically when the body is a
-        // FormData instance. Setting it manually breaks the boundary.
       },
       body: formData,
     });
-  } catch {
+    console.log('[Cheta] Upload status:', response.status);
+  } catch (err) {
+    console.log('[Cheta] Upload fetch threw:', err);
     throw new ApiError('Could not reach the server to upload the file.', 0);
   }
 
   const data = await response.json().catch(() => null);
+  console.log('[Cheta] Upload response:', JSON.stringify(data));
   if (!response.ok) {
     throw new ApiError(data?.message || `Upload failed (${response.status})`, response.status);
   }
