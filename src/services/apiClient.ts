@@ -31,15 +31,27 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.Authorization = `Bearer ${currentToken}`;
   }
 
+  // Strip trailing slashes from base and leading slashes from path,
+  // then join with a single slash. Prevents URLs like ".../api//auth/login".
+  const base = API_BASE_URL.replace(/\/+$/, '');
+  const cleanPath = path.replace(/^\/+/, '');
+  const fullUrl = `${base}/${cleanPath}`;
+
+  console.log('[Cheta] Requesting:', method, fullUrl);
+  if (body !== undefined) {
+    console.log('[Cheta] Body:', JSON.stringify(body));
+  }
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(fullUrl, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
+    console.log('[Cheta] Response status:', response.status);
   } catch (err) {
-    // Network-level failure (server down, wrong URL, adb reverse not set up, etc.)
+    console.log('[Cheta] Fetch threw:', err);
     throw new ApiError(
       'Could not reach the server. Check that the backend is running and reachable.',
       0
@@ -48,6 +60,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const isJson = response.headers.get('content-type')?.includes('application/json');
   const data = isJson ? await response.json() : null;
+  console.log('[Cheta] Response body:', JSON.stringify(data));
 
   if (!response.ok) {
     throw new ApiError(data?.message || `Request failed (${response.status})`, response.status);
