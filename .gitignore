@@ -4,3 +4,9 @@ dist/
 dist-test/
 android/
 ios/
+node_modules/
+.expo/
+dist/
+dist-test/
+android/
+ios/
