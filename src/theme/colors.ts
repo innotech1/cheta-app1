@@ -1,14 +1,18 @@
-// Palette pulled from the Chetá logo: deep purple background, cream elephant mark
+// src/theme/colors.ts
+// Static fallback — used only in places that can't access ThemeContext
+// (e.g. React Navigation screenOptions functions declared at module scope).
+// All screens should prefer useColors() from ./ThemeContext for live theming.
+
 export const colors = {
-  primary: '#4A1942', // deep purple (logo background)
+  primary: '#4A1942',
   primaryLight: '#6B2A61',
-  accent: '#F2E8D5', // cream (logo elephant/text)
+  accent: '#F2E8D5',
   background: '#FFFFFF',
   backgroundDark: '#1A0F18',
   text: '#1A1A1A',
   textMuted: '#767676',
   border: '#E6E6E6',
-  danger: '#E0245E', // for likes, matches the familiar social-app red
+  danger: '#E0245E',
   success: '#17BF63',
 };
 

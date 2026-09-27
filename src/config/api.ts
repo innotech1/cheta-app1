@@ -1,13 +1,16 @@
-// If you're connecting over USB (adb reverse), run this once alongside the
-// existing Metro one:
-//   adb reverse tcp:5000 tcp:5000
-// Then `localhost` below works from the phone, since adb forwards it to
-// your computer.
+// For a standalone build (EAS Build / installed APK), the app has no dev
+// tunnel or USB connection — it needs a real, public backend URL.
+// This points at the Render deployment:
+export const API_BASE_URL = 'https://chetab-end.onrender.com/api';
+
+// For local development in Expo Go instead, comment the line above and
+// uncomment ONE of these:
 //
-// If you switch to same-WiFi mode instead, replace this with your
-// computer's local IP, e.g. 'http://192.168.1.42:5000/api'
-// (find it with `ipconfig` on Windows, look for IPv4 Address).
-export const API_BASE_URL = 'https://chetab-end.onrender.com/api/';
+// USB (adb reverse tcp:5000 tcp:5000):
+// export const API_BASE_URL = 'http://localhost:5000/api';
+//
+// Same WiFi network (replace with your computer's local IP from `ipconfig`):
+// export const API_BASE_URL = 'http://192.168.1.42:5000/api';
 
 // Socket.io connects to the server root, not the /api path.
-export const SOCKET_URL = 'https://chetab-end.onrender.com';
+export const SOCKET_URL = API_BASE_URL.replace(/\/api\/?$/, '');

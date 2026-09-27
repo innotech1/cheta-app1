@@ -2,7 +2,9 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, radius } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { spacing, radius } from '../theme/colors';
+import ThemeToggle from '../components/ThemeToggle';
 
 function SettingsRow({
   icon,
@@ -10,18 +12,40 @@ function SettingsRow({
   value,
   onPress,
   destructive,
+  colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value?: string;
   onPress?: () => void;
   destructive?: boolean;
+  colors: ReturnType<typeof useTheme>['colors'];
 }) {
   return (
-    <Pressable style={styles.row} onPress={onPress} disabled={!onPress}>
-      <Ionicons name={icon} size={20} color={destructive ? colors.danger : colors.textMuted} />
-      <Text style={[styles.rowLabel, destructive && { color: colors.danger }]}>{label}</Text>
-      {value ? <Text style={styles.rowValue}>{value}</Text> : null}
+    <Pressable
+      style={[
+        rowStyles.row,
+        { borderBottomColor: colors.border },
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={20}
+        color={destructive ? colors.danger : colors.textMuted}
+      />
+      <Text
+        style={[
+          rowStyles.rowLabel,
+          { color: destructive ? colors.danger : colors.text },
+        ]}
+      >
+        {label}
+      </Text>
+      {value ? (
+        <Text style={[rowStyles.rowValue, { color: colors.textMuted }]}>{value}</Text>
+      ) : null}
       {onPress && !destructive ? (
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       ) : null}
@@ -31,31 +55,85 @@ function SettingsRow({
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
+  const { colors } = useTheme();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.sectionTitle}>Account</Text>
-      <View style={styles.card}>
-        <SettingsRow icon="person-outline" label="Display name" value={user?.displayName} />
-        <SettingsRow icon="at-outline" label="Username" value={`@${user?.username ?? ''}`} />
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+    >
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Account</Text>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.background, borderColor: colors.border },
+        ]}
+      >
+        <SettingsRow
+          icon="person-outline"
+          label="Display name"
+          value={user?.displayName}
+          colors={colors}
+        />
+        <SettingsRow
+          icon="at-outline"
+          label="Username"
+          value={`@${user?.username ?? ''}`}
+          colors={colors}
+        />
       </View>
 
-      <Text style={styles.sectionTitle}>About</Text>
-      <View style={styles.card}>
-        <SettingsRow icon="information-circle-outline" label="Chetá" value="v1.0.0" />
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Appearance</Text>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.background,
+            borderColor: colors.border,
+            padding: spacing.md,
+          },
+        ]}
+      >
+        <ThemeToggle />
       </View>
 
-      <View style={styles.card}>
-        <SettingsRow icon="log-out-outline" label="Sign out" onPress={signOut} destructive />
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>About</Text>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.background, borderColor: colors.border },
+        ]}
+      >
+        <SettingsRow
+          icon="information-circle-outline"
+          label="Chetá"
+          value="v1.0.0"
+          colors={colors}
+        />
+      </View>
+
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.background, borderColor: colors.border },
+        ]}
+      >
+        <SettingsRow
+          icon="log-out-outline"
+          label="Sign out"
+          onPress={signOut}
+          destructive
+          colors={colors}
+        />
       </View>
     </ScrollView>
   );
 }
 
+// Static styles that don't depend on theme colors
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     padding: spacing.md,
@@ -63,18 +141,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.textMuted,
     textTransform: 'uppercase',
     marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
   card: {
-    backgroundColor: colors.background,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
     overflow: 'hidden',
   },
+});
+
+// Row styles — colors are applied inline since they depend on the theme
+const rowStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -82,15 +161,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 4,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   rowLabel: {
     flex: 1,
     fontSize: 15,
-    color: colors.text,
   },
   rowValue: {
     fontSize: 14,
-    color: colors.textMuted,
   },
 });

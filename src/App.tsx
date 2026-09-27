@@ -4,29 +4,45 @@ import 'react-native-gesture-handler';
 
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
-import { AuthProvider } from './src/context/AuthContext';
-import RootNavigator from './src/navigation/RootNavigator';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import RootNavigator from './navigation/RootNavigator';
 
 // Keep the native splash screen up until RootNavigator explicitly hides it
 // (once we know whether the person is logged in). Must be called at module
 // scope, not inside a component — see expo-splash-screen's docs.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Separate component so it can call useTheme() — hooks only work
+// inside the provider that supplies them.
+function AppInner() {
+  const { scheme } = useTheme();
+  return (
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <RootNavigator />
+    </>
+  );
+}
+
 export default function App() {
   return (
     // Required by both react-native-gesture-handler and the drawer navigator —
     // must wrap the whole app, as close to the root as possible.
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </AuthProvider>
+      {/* initialMetrics gives us the correct inset values on the very first
+          render, preventing a 1-frame flash where content sits under the
+          status bar before SafeAreaProvider has measured the device. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppInner />
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
-// cache-buster 2026-09-24T10:54:46.2472788+01:00

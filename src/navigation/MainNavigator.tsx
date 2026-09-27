@@ -6,7 +6,7 @@ import PostDetailScreen from '../screens/PostDetailScreen';
 import NewPostScreen from '../screens/NewPostScreen';
 import ConversationsScreen from '../screens/ConversationsScreen';
 import ChatScreen from '../screens/ChatScreen';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 export type MainStackParamList = {
   Tabs: undefined;
@@ -20,11 +20,16 @@ export type MainStackParamList = {
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 export default function MainNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerTintColor: colors.primary,
         headerTitleStyle: { color: colors.text },
+        headerStyle: { backgroundColor: colors.background },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
