@@ -3,6 +3,7 @@
 import 'react-native-gesture-handler';
 
 import React from 'react';
+import { registerRootComponent } from 'expo';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -46,3 +47,8 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+// Because package.json's "main" points to this file directly
+// (instead of the default expo/AppEntry.js), we must explicitly register
+// the root component — this is what boots the app.
+registerRootComponent(App);

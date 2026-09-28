@@ -11,7 +11,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cheta.app"
+      "bundleIdentifier": "com.cheta.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Chẹta needs access to your camera for video calls and capturing media.",
+        "NSMicrophoneUsageDescription": "Chẹta needs access to your microphone for audio/video calls and voice messages."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,9 +23,15 @@
         "backgroundColor": "#4A1942"
       },
       "package": "com.cheta.app",
-       "usesCleartextTraffic": true,
+      "usesCleartextTraffic": true,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_CONNECT"
       ]
     },
     "web": {
@@ -44,7 +54,8 @@
           "cameraPermission": "Chẹta needs access to your camera to capture photos and videos directly.",
           "microphonePermission": "Chẹta needs access to your microphone when recording videos."
         }
-      ]
+      ],
+      "react-native-permissions"
     ],
     "extra": {
       "eas": {

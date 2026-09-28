@@ -12,9 +12,16 @@ import {
   Alert,
   Image,
   ScrollView,
+  PermissionsAndroid,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import createAgoraRtcEngine, {
+  RtcSurfaceView,
+  ChannelProfileType,
+  ClientRoleType,
+  IRtcEngine,
+} from 'react-native-agora';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +43,12 @@ export default function ChatScreen({ route }: Props) {
   const [isSending, setIsSending] = useState(false);
   const listRef = useRef<FlatList>(null);
 
+  // --- Agora Call State & Refs ---
+  const [inCall, setInCall] = useState(false);
+  const [isCallLoading, setIsCallLoading] = useState(false);
+  const [remoteUid, setRemoteUid] = useState<number | null>(null);
+  const agoraEngineRef = useRef<IRtcEngine | null>(null);
+
   const load = useCallback(async () => {
     const { messages: fetched } = await conversationService.getMessages(conversationId);
     setMessages(fetched);
@@ -53,6 +66,73 @@ export default function ChatScreen({ route }: Props) {
       setMessages((prev) => [...prev, message]);
     });
   }, [conversationId]);
+
+  // Cleanup Agora Engine when exiting screen
+  useEffect(() => {
+    return () => {
+      endCall();
+    };
+  }, []);
+
+  // --- Agora Call Logic ---
+  const requestCallPermissions = async () => {
+    if (Platform.OS === 'android') {
+      await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+      ]);
+    }
+  };
+
+  const startCall = async () => {
+    try {
+      setIsCallLoading(true);
+      setInCall(true);
+      await requestCallPermissions();
+
+      // Fetch dynamic token from your Render backend service
+      const res = await fetch(`https://chetab-end.onrender.com/api/call/token?channelName=${conversationId}`);
+      const { token, appId } = await res.json();
+
+      const engine = createAgoraRtcEngine();
+      agoraEngineRef.current = engine;
+
+      engine.registerEventHandler({
+        onJoinChannelSuccess: () => {
+          setIsCallLoading(false);
+        },
+        onUserJoined: (_connection, uid) => {
+          setRemoteUid(uid);
+        },
+        onUserOffline: (_connection, uid) => {
+          setRemoteUid(null);
+        },
+      });
+
+      engine.initialize({ appId });
+      engine.enableVideo();
+
+      engine.joinChannel(token, conversationId, 0, {
+        channelProfile: ChannelProfileType.ChannelProfileCommunication,
+        clientRoleType: ClientRoleType.ClientRoleBroadcaster,
+      });
+    } catch (err: any) {
+      Alert.alert('Call Error', err?.message || 'Failed to start call');
+      endCall();
+    }
+  };
+
+  const endCall = () => {
+    try {
+      agoraEngineRef.current?.leaveChannel();
+      agoraEngineRef.current?.release();
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    setInCall(false);
+    setIsCallLoading(false);
+    setRemoteUid(null);
+  };
 
   // Handle Media Selection & Validation
   const handlePickMedia = async () => {
@@ -121,7 +201,6 @@ export default function ChatScreen({ route }: Props) {
     setIsSending(true);
 
     try {
-      // Pass formData/media array to conversationService.sendMessage
       const { message } = await conversationService.sendMessage(conversationId, textToSend, mediaToSend);
       setMessages((prev) => [...prev, message]);
     } catch (err: any) {
@@ -149,6 +228,38 @@ export default function ChatScreen({ route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
+      {/* Dynamic Header Action Bar */}
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>Conversation</Text>
+        {!inCall ? (
+          <Pressable style={styles.callHeaderBtn} onPress={startCall}>
+            <Ionicons name="call" size={16} color="#FFF" />
+            <Text style={styles.callBtnText}>Call</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.endHeaderBtn} onPress={endCall}>
+            <Ionicons name="call" size={16} color="#FFF" />
+            <Text style={styles.callBtnText}>End</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Embedded In-Chat Call Overlay Banner */}
+      {inCall && (
+        <View style={styles.callOverlay}>
+          {isCallLoading ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : remoteUid ? (
+            <RtcSurfaceView canvas={{ uid: remoteUid }} style={styles.remoteVideo} />
+          ) : (
+            <Text style={styles.callStatusText}>Connecting call...</Text>
+          )}
+          <Pressable style={styles.smallEndButton} onPress={endCall}>
+            <Text style={styles.smallEndText}>Hang Up</Text>
+          </Pressable>
+        </View>
+      )}
+
       <FlatList
         ref={listRef}
         data={messages}
@@ -242,6 +353,76 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  topBarTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  callHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    gap: 4,
+  },
+  endHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D32F2F',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    gap: 4,
+  },
+  callBtnText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  callOverlay: {
+    height: 150,
+    backgroundColor: '#1E293B',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  remoteVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  callStatusText: {
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  smallEndButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+  },
+  smallEndText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   centered: {
     flex: 1,
