@@ -91,7 +91,9 @@ export default function ChatScreen({ route }: Props) {
       await requestCallPermissions();
 
       // Fetch dynamic token from your Render backend service
-      const res = await fetch(`https://chetab-end.onrender.com/api/call/token?channelName=${conversationId}`);
+      const res = await fetch(
+        `https://chetab-end.onrender.com/api/call/token?channelName=${conversationId}`
+      );
       const { token, appId } = await res.json();
 
       const engine = createAgoraRtcEngine();
@@ -104,7 +106,7 @@ export default function ChatScreen({ route }: Props) {
         onUserJoined: (_connection, uid) => {
           setRemoteUid(uid);
         },
-        onUserOffline: (_connection, uid) => {
+        onUserOffline: (_connection, _uid) => {
           setRemoteUid(null);
         },
       });
@@ -201,7 +203,11 @@ export default function ChatScreen({ route }: Props) {
     setIsSending(true);
 
     try {
-      const { message } = await conversationService.sendMessage(conversationId, textToSend, mediaToSend);
+      const { message } = await conversationService.sendMessage(
+        conversationId,
+        textToSend,
+        mediaToSend
+      );
       setMessages((prev) => [...prev, message]);
     } catch (err: any) {
       setText(textToSend);
@@ -279,7 +285,7 @@ export default function ChatScreen({ route }: Props) {
                 {/* Media Attachments Grid */}
                 {item.media && item.media.length > 0 && (
                   <View style={styles.mediaGrid}>
-                    {item.media.map((m, idx) => (
+                    {item.media.map((m: any, idx: number) => (
                       <View key={idx} style={styles.mediaFrame}>
                         {m.mediaType === 'image' ? (
                           <Image source={{ uri: m.mediaUrl }} style={styles.mediaThumbnail} />

@@ -6,6 +6,11 @@ import PostDetailScreen from '../screens/PostDetailScreen';
 import NewPostScreen from '../screens/NewPostScreen';
 import ConversationsScreen from '../screens/ConversationsScreen';
 import ChatScreen from '../screens/ChatScreen';
+import MarketplaceScreen from '../screens/MarketplaceScreen';
+import ListingDetailScreen from '../screens/ListingDetailScreen';
+import CreateListingScreen from '../screens/CreateListingScreen';
+import MyListingsScreen from '../screens/MyListingsScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import { useTheme } from '../theme/ThemeContext';
 
 export type MainStackParamList = {
@@ -15,6 +20,13 @@ export type MainStackParamList = {
   NewPost: undefined;
   Conversations: undefined;
   Chat: { conversationId: string; otherUserName: string };
+  // Marketplace
+  Marketplace: undefined;
+  ListingDetail: { listingId: string };
+  CreateListing: undefined;
+  EditListing: { listingId: string };
+  MyListings: undefined;
+  Favorites: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -49,6 +61,38 @@ export default function MainNavigator() {
         name="Chat"
         component={ChatScreen}
         options={({ route }) => ({ title: route.params.otherUserName })}
+      />
+
+      {/* Marketplace */}
+      <Stack.Screen
+        name="Marketplace"
+        component={MarketplaceScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ListingDetail"
+        component={ListingDetailScreen}
+        options={{ title: 'Listing' }}
+      />
+      <Stack.Screen
+        name="CreateListing"
+        component={CreateListingScreen}
+        options={{ title: 'New listing', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="EditListing"
+        component={CreateListingScreen}
+        options={{ title: 'Edit listing', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="MyListings"
+        component={MyListingsScreen}
+        options={{ title: 'My listings' }}
+      />
+      <Stack.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{ title: 'Saved' }}
       />
     </Stack.Navigator>
   );

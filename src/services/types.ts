@@ -1,3 +1,5 @@
+// src/services/types.ts
+
 export type ApiUser = {
   id: string;
   displayName: string;
@@ -28,9 +30,6 @@ export type ApiPost = {
   };
   likedByViewer?: boolean;
   repostedByViewer?: boolean;
-  // Present only when this feed item IS a repost — describes who reposted
-  // it and when. The rest of the fields (author, text, counts) always
-  // describe the ORIGINAL post.
   repostedBy?: {
     id: string;
     displayName: string;
@@ -89,3 +88,42 @@ export type ApiMessage = {
     avatarUrl: string;
   };
 };
+
+// ---------- Marketplace types ----------
+
+export type ApiListingAuthor = {
+  id: string;
+  displayName: string;
+  username: string;
+  avatarUrl: string;
+};
+
+export type ApiListing = {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: 'NGN' | 'USD' | 'EUR' | 'GBP';
+  negotiable: boolean;
+  category:
+    | 'electronics'
+    | 'fashion'
+    | 'home'
+    | 'vehicles'
+    | 'property'
+    | 'services'
+    | 'jobs'
+    | 'other';
+  condition: 'new' | 'used' | 'refurbished' | 'not_applicable';
+  images: string[];
+  location: string;
+  status: 'active' | 'sold' | 'archived';
+  viewCount: number;
+  favoriteCount: number;
+  createdAt: string;
+  author: ApiListingAuthor | null;
+};
+
+export type ListingCategory = ApiListing['category'];
+export type ListingCondition = ApiListing['condition'];
+export type ListingStatus = ApiListing['status'];

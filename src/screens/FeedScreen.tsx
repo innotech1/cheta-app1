@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CompositeScreenProps, DrawerActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { TabParamList } from '../navigation/TabNavigator';
 import PostCard from '../components/PostCard';
@@ -29,6 +30,7 @@ type Props = CompositeScreenProps<
 
 export default function FeedScreen({ navigation }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -123,7 +125,7 @@ export default function FeedScreen({ navigation }: Props) {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm + 4,
+      paddingBottom: spacing.sm + 4,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       backgroundColor: colors.background,
@@ -165,7 +167,7 @@ export default function FeedScreen({ navigation }: Props) {
     fab: {
       position: 'absolute',
       right: spacing.lg,
-      bottom: spacing.lg,
+      bottom: spacing.lg + insets.bottom,
       width: 56,
       height: 56,
       borderRadius: 28,
@@ -182,7 +184,7 @@ export default function FeedScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <Pressable onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
           <Ionicons name="menu" size={24} color={colors.primary} />
         </Pressable>

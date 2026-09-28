@@ -39,12 +39,12 @@ export function sendMessage(
       } as any);
     });
 
+    // Note: apiClient sets the correct multipart Content-Type automatically
+    // when the body is a FormData instance — do not set it manually here,
+    // as doing so drops the boundary and the server rejects the file.
     return apiRequest<{ message: ApiMessage }>(`/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     });
   }
 

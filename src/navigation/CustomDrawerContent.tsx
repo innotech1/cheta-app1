@@ -1,90 +1,144 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+} from 'react-native';
+import {
+  DrawerContentScrollView,
+  DrawerItemList,
+  DrawerItem,
+} from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
-import { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { DrawerActions } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, radius } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { spacing, radius } from '../theme/colors';
 
-export default function CustomDrawerContent({ navigation }: DrawerContentComponentProps) {
-  const { user, signOut } = useAuth();
+export default function CustomDrawerContent(props: any) {
+  const { user } = useAuth();
+  const { colors } = useTheme();
+
+  const goToMarketplace = () => {
+    props.navigation.closeDrawer();
+    props.navigation.navigate('MainTabs', {
+      screen: 'Marketplace',
+    });
+  };
+
+  const goToMyListings = () => {
+    props.navigation.closeDrawer();
+    props.navigation.navigate('MainTabs', {
+      screen: 'MyListings',
+    });
+  };
+
+  const goToFavorites = () => {
+    props.navigation.closeDrawer();
+    props.navigation.navigate('MainTabs', {
+      screen: 'Favorites',
+    });
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {(user?.displayName || '?').charAt(0).toUpperCase()}
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{ backgroundColor: colors.background }}
+    >
+      {/* User header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Image
+          source={
+            user?.avatarUrl
+              ? { uri: user.avatarUrl }
+              : require('../../assets/images/logo.png')
+          }
+          style={styles.avatar}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.name, { color: colors.text }]}>
+            {user?.displayName ?? 'Guest'}
+          </Text>
+          <Text style={[styles.username, { color: colors.textMuted }]}>
+            @{user?.username ?? 'guest'}
           </Text>
         </View>
-        <Text style={styles.name}>{user?.displayName}</Text>
-        <Text style={styles.handle}>@{user?.username}</Text>
       </View>
 
-      <View style={styles.menu}>
-        <Pressable
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Ionicons name="settings-outline" size={22} color={colors.text} />
-          <Text style={styles.menuLabel}>Settings</Text>
-        </Pressable>
+      {/* Default drawer items (MainTabs, Settings) */}
+      <DrawerItemList {...props} />
 
-        <Pressable style={styles.menuItem} onPress={signOut}>
-          <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-          <Text style={[styles.menuLabel, { color: colors.danger }]}>Sign out</Text>
-        </Pressable>
-      </View>
-    </View>
+      {/* Marketplace section */}
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
+      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+        Marketplace
+      </Text>
+
+      <DrawerItem
+        label="Browse"
+        labelStyle={{ color: colors.text, fontWeight: '600' }}
+        icon={({ size }) => (
+          <Ionicons name="storefront-outline" size={size} color={colors.primary} />
+        )}
+        onPress={goToMarketplace}
+      />
+
+      <DrawerItem
+        label="My Listings"
+        labelStyle={{ color: colors.text, fontWeight: '600' }}
+        icon={({ size }) => (
+          <Ionicons name="pricetags-outline" size={size} color={colors.primary} />
+        )}
+        onPress={goToMyListings}
+      />
+
+      <DrawerItem
+        label="Saved"
+        labelStyle={{ color: colors.text, fontWeight: '600' }}
+        icon={({ size }) => (
+          <Ionicons name="heart-outline" size={size} color={colors.primary} />
+        )}
+        onPress={goToFavorites}
+      />
+    </DrawerContentScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   header: {
-    backgroundColor: colors.primary,
-    padding: spacing.lg,
-    paddingTop: spacing.xl + spacing.md,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.full,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
     marginBottom: spacing.sm,
-  },
-  avatarText: {
-    color: colors.accent,
-    fontWeight: '700',
-    fontSize: 22,
-  },
-  name: {
-    color: colors.accent,
-    fontWeight: '700',
-    fontSize: 17,
-  },
-  handle: {
-    color: 'rgba(242,232,213,0.8)',
-    fontSize: 13,
-  },
-  menu: {
-    padding: spacing.sm,
-  },
-  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderRadius: radius.sm,
   },
-  menuLabel: {
-    fontSize: 15,
-    color: colors.text,
-    fontWeight: '500',
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  username: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  divider: {
+    height: 1,
+    marginVertical: spacing.sm,
+    marginHorizontal: spacing.md,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
   },
 });
