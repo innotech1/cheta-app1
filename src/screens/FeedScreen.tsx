@@ -14,8 +14,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { TabParamList } from '../navigation/TabNavigator';
-import PostCard, { Post } from '../components/PostCard';
-import { colors, spacing } from '../theme/colors';
+import PostCard from '../components/PostCard';
+import { useTheme } from '../theme/ThemeContext';
+import { spacing } from '../theme/colors';
 import * as feedService from '../services/feedService';
 import * as postService from '../services/postService';
 import { toUiPost } from '../utils/formatPost';
@@ -27,6 +28,7 @@ type Props = CompositeScreenProps<
 >;
 
 export default function FeedScreen({ navigation }: Props) {
+  const { colors } = useTheme();
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -54,7 +56,6 @@ export default function FeedScreen({ navigation }: Props) {
   };
 
   const handleLikeToggle = async (post: ApiPost) => {
-    // Optimistic update — flip it locally right away, then sync with the server.
     setPosts((prev) =>
       prev.map((p) =>
         p.id === post.id
@@ -73,15 +74,10 @@ export default function FeedScreen({ navigation }: Props) {
         await postService.likePost(post.id);
       }
     } catch {
-      // Revert on failure
       setPosts((prev) =>
         prev.map((p) =>
           p.id === post.id
-            ? {
-                ...p,
-                likedByViewer: post.likedByViewer,
-                likeCount: post.likeCount,
-              }
+            ? { ...p, likedByViewer: post.likedByViewer, likeCount: post.likeCount }
             : p
         )
       );
@@ -117,6 +113,73 @@ export default function FeedScreen({ navigation }: Props) {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: colors.primary,
+    },
+    headerIcons: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    centered: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
+    },
+    errorText: {
+      color: colors.danger,
+      textAlign: 'center',
+      marginBottom: spacing.md,
+    },
+    retryButton: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+    },
+    retryText: {
+      color: colors.accent,
+      fontWeight: '600',
+    },
+    emptyText: {
+      textAlign: 'center',
+      color: colors.textMuted,
+    },
+    fab: {
+      position: 'absolute',
+      right: spacing.lg,
+      bottom: spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
+    },
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -150,7 +213,12 @@ export default function FeedScreen({ navigation }: Props) {
           data={posts}
           keyExtractor={(item) => (item.repostedAt ? `${item.id}-repost-${item.repostedAt}` : item.id)}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
           }
           renderItem={({ item }) => (
             <PostCard
@@ -179,69 +247,3 @@ export default function FeedScreen({ navigation }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.primary,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  errorText: {
-    color: colors.danger,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  retryButton: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-  },
-  retryText: {
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: colors.textMuted,
-  },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
-});

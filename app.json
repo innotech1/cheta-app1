@@ -23,7 +23,6 @@
         "backgroundColor": "#4A1942"
       },
       "package": "com.cheta.app",
-      "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
@@ -55,7 +54,16 @@
           "microphonePermission": "Chẹta needs access to your microphone when recording videos."
         }
       ],
-      "react-native-permissions"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
