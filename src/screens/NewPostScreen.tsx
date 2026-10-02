@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,15 +23,13 @@ import { colors, spacing, radius } from '../theme/colors';
 type Props = NativeStackScreenProps<MainStackParamList, 'NewPost'>;
 
 const MAX_LENGTH = 500;
+const MAX_MEDIA = 8;
 
-type PickedMedia = {
-  uri: string;
-  type: 'image' | 'video';
-};
+type PickedMedia = { uri: string; type: 'image' | 'video' };
 
 export default function NewPostScreen({ navigation }: Props) {
   const [text, setText] = useState('');
-  const [media, setMedia] = useState<PickedMedia | null>(null);
+  const [mediaList, setMediaList] = useState<PickedMedia[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,35 +42,47 @@ export default function NewPostScreen({ navigation }: Props) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_MEDIA - mediaList.length,
       quality: 0.8,
-      videoMaxDuration: 60,
     });
 
-    if (result.canceled || !result.assets?.[0]) return;
+    if (result.canceled || !result.assets?.length) return;
 
-    const asset = result.assets[0];
+    const picked: PickedMedia[] = result.assets.map((a) => ({
+      uri: a.uri,
+      type: a.type === 'video' ? 'video' : 'image',
+    }));
+
     setError(null);
-    setMedia({
-      uri: asset.uri,
-      type: asset.type === 'video' ? 'video' : 'image',
-    });
+    setMediaList((prev) => [...prev, ...picked].slice(0, MAX_MEDIA));
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMediaList((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handlePost = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() && mediaList.length === 0) return;
     setError(null);
     setIsSubmitting(true);
     try {
-      let mediaUrl: string | undefined;
-      let mediaType: 'image' | 'video' | undefined;
-
-      if (media) {
-        const uploaded = await uploadMedia(media.uri, media.type);
-        mediaUrl = uploaded.url;
-        mediaType = uploaded.mediaType;
+      // Upload each media asset, collect URLs
+      const uploadedMedia: { mediaUrl: string; mediaType: 'image' | 'video' }[] = [];
+      for (const m of mediaList) {
+        const uploaded = await uploadMedia(m.uri, m.type);
+        uploadedMedia.push({ mediaUrl: uploaded.url, mediaType: uploaded.mediaType });
       }
 
-      await postService.createPost({ text: text.trim(), mediaUrl, mediaType });
+      // Send as a single post — the backend accepts either one mediaUrl
+      // (legacy) or an array. Adjust the createPost payload to whatever
+      // your postService supports.
+      await postService.createPost({
+        text: text.trim(),
+        mediaUrl: uploadedMedia[0]?.mediaUrl,
+        mediaType: uploadedMedia[0]?.mediaType,
+      });
+
       navigation.goBack();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not post');
@@ -97,48 +108,52 @@ export default function NewPostScreen({ navigation }: Props) {
         editable={!isSubmitting}
       />
 
-      {media ? (
-        <View style={styles.mediaPreviewWrap}>
-          {media.type === 'video' ? (
-            <InlineVideo uri={media.uri} />
-          ) : (
-            <Image source={{ uri: media.uri }} style={styles.imagePreview} />
-          )}
-          <Pressable
-            style={styles.removeMediaButton}
-            onPress={() => setMedia(null)}
-            disabled={isSubmitting}
-          >
-            <Ionicons name="close" size={16} color="#fff" />
-          </Pressable>
-        </View>
-      ) : null}
+      {mediaList.length > 0 && (
+        <ScrollView horizontal style={{ marginTop: spacing.sm }} showsHorizontalScrollIndicator={false}>
+          {mediaList.map((m, i) => (
+            <View key={i} style={styles.mediaPreviewWrap}>
+              {m.type === 'video' ? (
+                <InlineVideo uri={m.uri} />
+              ) : (
+                <Image source={{ uri: m.uri }} style={styles.imagePreview} />
+              )}
+              <Pressable
+                style={styles.removeMediaButton}
+                onPress={() => handleRemoveMedia(i)}
+                disabled={isSubmitting}
+              >
+                <Ionicons name="close" size={16} color="#fff" />
+              </Pressable>
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       <View style={styles.footer}>
         <Pressable
           style={styles.attachButton}
           onPress={handlePickMedia}
-          disabled={isSubmitting || !!media}
+          disabled={isSubmitting || mediaList.length >= MAX_MEDIA}
         >
           <Ionicons
             name="image-outline"
             size={22}
-            color={media ? colors.textMuted : colors.primary}
+            color={mediaList.length >= MAX_MEDIA ? colors.textMuted : colors.primary}
           />
         </Pressable>
         {error ? <Text style={styles.errorText}>{error}</Text> : <View style={{ flex: 1 }} />}
         <Text style={styles.counter}>
-          {text.length}/{MAX_LENGTH}
+          {mediaList.length}/{MAX_MEDIA} · {text.length}/{MAX_LENGTH}
         </Text>
       </View>
 
       <Pressable
         style={[
           styles.postButton,
-          (!text.trim() || isSubmitting) && styles.postButtonDisabled,
+          ((!text.trim() && mediaList.length === 0) || isSubmitting) && styles.postButtonDisabled,
         ]}
         onPress={handlePost}
-        disabled={!text.trim() || isSubmitting}
+        disabled={(!text.trim() && mediaList.length === 0) || isSubmitting}
       >
         {isSubmitting ? (
           <ActivityIndicator color={colors.accent} />
@@ -151,11 +166,7 @@ export default function NewPostScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
-  },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.md },
   input: {
     fontSize: 18,
     color: colors.text,
@@ -164,11 +175,11 @@ const styles = StyleSheet.create({
   },
   mediaPreviewWrap: {
     position: 'relative',
-    marginTop: spacing.sm,
+    marginRight: spacing.sm,
   },
   imagePreview: {
-    width: '100%',
-    height: 220,
+    width: 200,
+    height: 200,
     borderRadius: radius.sm,
     backgroundColor: colors.border,
   },
@@ -189,18 +200,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     gap: spacing.sm,
   },
-  attachButton: {
-    padding: spacing.xs,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: 13,
-    flex: 1,
-  },
-  counter: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
+  attachButton: { padding: spacing.xs },
+  errorText: { color: colors.danger, fontSize: 13, flex: 1 },
+  counter: { color: colors.textMuted, fontSize: 13 },
   postButton: {
     backgroundColor: colors.primary,
     borderRadius: radius.full,
@@ -208,12 +210,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.lg,
   },
-  postButtonDisabled: {
-    opacity: 0.5,
-  },
-  postButtonText: {
-    color: colors.accent,
-    fontWeight: '700',
-    fontSize: 16,
-  },
+  postButtonDisabled: { opacity: 0.5 },
+  postButtonText: { color: colors.accent, fontWeight: '700', fontSize: 16 },
 });

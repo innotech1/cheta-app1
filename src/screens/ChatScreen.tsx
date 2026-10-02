@@ -25,6 +25,7 @@ import createAgoraRtcEngine, {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { useAuth } from '../context/AuthContext';
+import { getAuthToken } from '../services/apiClient';
 import * as conversationService from '../services/conversationService';
 import { onNewMessage } from '../services/socket';
 import { ApiMessage } from '../services/types';
@@ -59,7 +60,6 @@ export default function ChatScreen({ route }: Props) {
     load().finally(() => setIsLoading(false));
   }, [load]);
 
-  // Live incoming messages for this specific conversation
   useEffect(() => {
     return onNewMessage((message) => {
       if (message.conversationId !== conversationId) return;
@@ -67,7 +67,6 @@ export default function ChatScreen({ route }: Props) {
     });
   }, [conversationId]);
 
-  // Cleanup Agora Engine when exiting screen
   useEffect(() => {
     return () => {
       endCall();
@@ -90,9 +89,13 @@ export default function ChatScreen({ route }: Props) {
       setInCall(true);
       await requestCallPermissions();
 
-      // Fetch dynamic token from your Render backend service
       const res = await fetch(
-        `https://chetab-end.onrender.com/api/call/token?channelName=${conversationId}`
+        `https://chetab-end.onrender.com/api/call/token?channelName=${conversationId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        }
       );
       const { token, appId } = await res.json();
 
@@ -136,24 +139,21 @@ export default function ChatScreen({ route }: Props) {
     setRemoteUid(null);
   };
 
-  // Handle Media Selection & Validation
   const handlePickMedia = async () => {
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!granted) {
       Alert.alert('Permission required', 'Please grant permission to access your gallery.');
       return;
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsMultipleSelection: true,
-      selectionLimit: 100,
-      quality: 1,
-    });
+const result = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes: type === 'video' ? ['videos'] : ['images'],  // 👈 array API
+  allowsMultipleSelection: true,
+  selectionLimit: 0,   // 0 = no limit; or a specific number
+  quality: 0.8,
+});
 
     if (!result.canceled) {
       const newAssets = result.assets;
-
       const combined = [...selectedMedia, ...newAssets];
       const images = combined.filter((m) => m.type === 'image');
       const videos = combined.filter((m) => m.type === 'video');
@@ -162,7 +162,6 @@ export default function ChatScreen({ route }: Props) {
         Alert.alert('Limit Exceeded', 'You can attach a maximum of 100 images per message.');
         return;
       }
-
       if (videos.length > 10) {
         Alert.alert('Limit Exceeded', 'You can attach a maximum of 10 videos per message.');
         return;
@@ -178,7 +177,6 @@ export default function ChatScreen({ route }: Props) {
         Alert.alert('Size Limit', 'Total image payload exceeds 5 GB limit.');
         return;
       }
-
       if (totalVidSize > TEN_GB) {
         Alert.alert('Size Limit', 'Total video payload exceeds 10 GB limit.');
         return;
@@ -234,7 +232,6 @@ export default function ChatScreen({ route }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}
     >
-      {/* Dynamic Header Action Bar */}
       <View style={styles.topBar}>
         <Text style={styles.topBarTitle}>Conversation</Text>
         {!inCall ? (
@@ -250,7 +247,6 @@ export default function ChatScreen({ route }: Props) {
         )}
       </View>
 
-      {/* Embedded In-Chat Call Overlay Banner */}
       {inCall && (
         <View style={styles.callOverlay}>
           {isCallLoading ? (
@@ -282,7 +278,6 @@ export default function ChatScreen({ route }: Props) {
                   </Text>
                 )}
 
-                {/* Media Attachments Grid */}
                 {item.media && item.media.length > 0 && (
                   <View style={styles.mediaGrid}>
                     {item.media.map((m: any, idx: number) => (
@@ -310,7 +305,6 @@ export default function ChatScreen({ route }: Props) {
         contentContainerStyle={messages.length === 0 ? { flex: 1 } : undefined}
       />
 
-      {/* Selected Media Preview Drawer */}
       {selectedMedia.length > 0 && (
         <ScrollView horizontal style={styles.previewContainer}>
           {selectedMedia.map((item, index) => (
@@ -324,7 +318,6 @@ export default function ChatScreen({ route }: Props) {
         </ScrollView>
       )}
 
-      {/* Composer Input Bar */}
       <View style={styles.composer}>
         <Pressable onPress={handlePickMedia} style={styles.attachButton}>
           <Ionicons name="attach" size={22} color={colors.primary} />

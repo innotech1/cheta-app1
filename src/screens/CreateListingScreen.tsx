@@ -96,11 +96,11 @@ export default function CreateListingScreen({ navigation, route }: Props) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      selectionLimit: MAX_IMAGES - images.length,
-      quality: 0.8,
-    });
+  mediaTypes: type === 'video' ? ['videos'] : ['images'],  // 👈 array API
+  allowsMultipleSelection: true,
+  selectionLimit: 0,   // 0 = no limit; or a specific number
+  quality: 0.8,
+});
 
     if (result.canceled || !result.assets?.length) return;
 

@@ -1,4 +1,5 @@
 import { ImagePickerAsset } from 'expo-image-picker';
+import { File } from 'expo-file-system';
 import { apiRequest } from './apiClient';
 import { ApiConversation, ApiMessage } from './types';
 
@@ -26,26 +27,26 @@ export function sendMessage(
 ) {
   if (mediaAssets.length > 0) {
     const formData = new FormData();
-    formData.append('text', text);
+    if (text) formData.append('text', text);
 
-    mediaAssets.forEach((file, index) => {
-      const ext = file.uri.split('.').pop() || 'jpg';
-      const isVideo = file.type === 'video';
-
-      formData.append('media', {
-        uri: file.uri,
-        name: `msg_media_${index}_${Date.now()}.${ext}`,
-        type: isVideo ? `video/${ext}` : `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-      } as any);
+    mediaAssets.forEach((asset, index) => {
+      const ext =
+        asset.uri.split('.').pop()?.toLowerCase() ||
+        (asset.type === 'video' ? 'mp4' : 'jpg');
+      const name = `msg_media_${index}_${Date.now()}.${ext}`;
+      // SDK 57's fetch requires a Blob-compatible part.
+      // expo-file-system's File class satisfies this.
+      const file = new File(asset.uri);
+      formData.append('media', file, name);
     });
 
-    // Note: apiClient sets the correct multipart Content-Type automatically
-    // when the body is a FormData instance — do not set it manually here,
-    // as doing so drops the boundary and the server rejects the file.
-    return apiRequest<{ message: ApiMessage }>(`/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      body: formData,
-    });
+    return apiRequest<{ message: ApiMessage }>(
+      `/conversations/${conversationId}/messages`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
   }
 
   return apiRequest<{ message: ApiMessage }>(`/conversations/${conversationId}/messages`, {
