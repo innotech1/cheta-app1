@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { TabParamList } from '../navigation/TabNavigator';
 import PostCard from '../components/PostCard';
@@ -22,7 +23,8 @@ import { likePost, unlikePost, repost as repostFn, undoRepost } from '../service
 import { toUiPost } from '../utils/formatPost';
 import { SearchUser } from '../services/searchService';
 import { ApiPost } from '../services/types';
-import { colors, spacing, radius } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { spacing, radius } from '../theme/colors';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<TabParamList, 'Search'>,
@@ -30,6 +32,8 @@ type Props = CompositeScreenProps<
 >;
 
 export default function SearchScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<SearchUser[]>([]);
   const [posts, setPosts] = useState<ApiPost[]>([]);
@@ -37,7 +41,6 @@ export default function SearchScreen({ navigation }: Props) {
   const [followingUsernames, setFollowingUsernames] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  // Debounce: wait 400ms after typing stops before hitting the API
   useEffect(() => {
     const trimmed = query.trim();
     if (!trimmed) {
@@ -46,7 +49,6 @@ export default function SearchScreen({ navigation }: Props) {
       setError(null);
       return;
     }
-
     setIsSearching(true);
     setError(null);
     const timeout = setTimeout(async () => {
@@ -60,7 +62,6 @@ export default function SearchScreen({ navigation }: Props) {
         setIsSearching(false);
       }
     }, 400);
-
     return () => clearTimeout(timeout);
   }, [query]);
 
@@ -77,11 +78,8 @@ export default function SearchScreen({ navigation }: Props) {
       )
     );
     try {
-      if (post.likedByViewer) {
-        await unlikePost(post.id);
-      } else {
-        await likePost(post.id);
-      }
+      if (post.likedByViewer) await unlikePost(post.id);
+      else await likePost(post.id);
     } catch {
       setPosts((prev) => prev.map((p) => (p.id === post.id ? post : p)));
     }
@@ -100,11 +98,8 @@ export default function SearchScreen({ navigation }: Props) {
       )
     );
     try {
-      if (post.repostedByViewer) {
-        await undoRepost(post.id);
-      } else {
-        await repostFn(post.id);
-      }
+      if (post.repostedByViewer) await undoRepost(post.id);
+      else await repostFn(post.id);
     } catch {
       setPosts((prev) => prev.map((p) => (p.id === post.id ? post : p)));
     }
@@ -118,11 +113,8 @@ export default function SearchScreen({ navigation }: Props) {
       return next;
     });
     try {
-      if (isFollowing) {
-        await userService.unfollowUser(user.username);
-      } else {
-        await userService.followUser(user.username);
-      }
+      if (isFollowing) await userService.unfollowUser(user.username);
+      else await userService.followUser(user.username);
     } catch {
       setFollowingUsernames((prev) => {
         const next = new Set(prev);
@@ -139,12 +131,103 @@ export default function SearchScreen({ navigation }: Props) {
         conversationId: conversation.id,
         otherUserName: user.displayName,
       });
-    } catch {
-      // Silently fail — the person can just try tapping again
-    }
+    } catch {}
   };
 
   const showResults = query.trim().length > 0;
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: insets.top,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundDark,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+      margin: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    input: {
+      flex: 1,
+      paddingVertical: spacing.sm + 4,
+      fontSize: 15,
+      color: colors.text,
+    },
+    empty: {
+      textAlign: 'center',
+      color: colors.textMuted,
+      marginTop: spacing.xl,
+    },
+    sectionHeader: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xs,
+    },
+    userRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    userAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.full,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.sm,
+    },
+    userAvatarText: {
+      color: colors.accent,
+      fontWeight: '700',
+    },
+    userInfo: { flex: 1 },
+    userName: {
+      fontWeight: '700',
+      fontSize: 14,
+      color: colors.text,
+    },
+    userHandle: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    followButton: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.full,
+      backgroundColor: colors.primary,
+    },
+    messageButton: {
+      padding: spacing.xs,
+      marginRight: spacing.xs,
+    },
+    followingButton: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    followButtonText: {
+      color: colors.accent,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    followingButtonText: {
+      color: colors.text,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -181,12 +264,8 @@ export default function SearchScreen({ navigation }: Props) {
               : `${item.type}-${i}`
           }
           renderItem={({ item }) => {
-            if (item.type === 'usersHeader') {
-              return <Text style={styles.sectionHeader}>People</Text>;
-            }
-            if (item.type === 'postsHeader') {
-              return <Text style={styles.sectionHeader}>Posts</Text>;
-            }
+            if (item.type === 'usersHeader') return <Text style={styles.sectionHeader}>People</Text>;
+            if (item.type === 'postsHeader') return <Text style={styles.sectionHeader}>Posts</Text>;
             if (item.type === 'user') {
               const isFollowing = followingUsernames.has(item.user.username);
               return (
@@ -203,7 +282,6 @@ export default function SearchScreen({ navigation }: Props) {
                   <Pressable
                     style={styles.messageButton}
                     onPress={() => handleMessagePress(item.user)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="mail-outline" size={18} color={colors.primary} />
                   </Pressable>
@@ -212,10 +290,7 @@ export default function SearchScreen({ navigation }: Props) {
                     onPress={() => handleFollowToggle(item.user)}
                   >
                     <Text
-                      style={[
-                        styles.followButtonText,
-                        isFollowing && styles.followingButtonText,
-                      ]}
+                      style={[styles.followButtonText, isFollowing && styles.followingButtonText]}
                     >
                       {isFollowing ? 'Following' : 'Follow'}
                     </Text>
@@ -240,94 +315,3 @@ export default function SearchScreen({ navigation }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F2',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    margin: spacing.md,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: spacing.sm + 4,
-    fontSize: 15,
-  },
-  empty: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    marginTop: spacing.xl,
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
-  },
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-  },
-  userAvatarText: {
-    color: colors.accent,
-    fontWeight: '700',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontWeight: '700',
-    fontSize: 14,
-    color: colors.text,
-  },
-  userHandle: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  followButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-  },
-  messageButton: {
-    padding: spacing.xs,
-    marginRight: spacing.xs,
-  },
-  followingButton: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  followButtonText: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  followingButtonText: {
-    color: colors.text,
-  },
-});

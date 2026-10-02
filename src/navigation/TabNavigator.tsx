@@ -16,16 +16,15 @@ export type TabParamList = {
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const ICONS: Record<keyof TabParamList, keyof typeof Ionicons.glyphMap> = {
-  Feed: 'home-outline',
-  Search: 'search-outline',
-  Videos: 'play-circle-outline',
-  Profile: 'person-outline',
+const ICONS: Record<keyof TabParamList, { focused: keyof typeof Ionicons.glyphMap; outline: keyof typeof Ionicons.glyphMap }> = {
+  Feed: { focused: 'home', outline: 'home-outline' },
+  Search: { focused: 'search', outline: 'search-outline' },
+  Videos: { focused: 'play-circle', outline: 'play-circle-outline' },
+  Profile: { focused: 'person', outline: 'person-outline' },
 };
 
 export default function TabNavigator() {
-  const { colors, scheme } = useTheme();
-  const isDark = scheme === 'dark';
+  const { colors } = useTheme();
 
   return (
     <Tab.Navigator
@@ -33,13 +32,17 @@ export default function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarShowLabel: true,
         tabBarStyle: {
           backgroundColor:
-            // Videos is a full-bleed black screen, so keep the bar black there
-            // in both themes. Otherwise use the theme's background color.
             route.name === 'Videos' ? '#000' : colors.background,
           borderTopColor: route.name === 'Videos' ? '#000' : colors.border,
           borderTopWidth: 1,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          const iconSet = ICONS[route.name as keyof TabParamList];
+          const name = focused ? iconSet.focused : iconSet.outline;
+          return <Ionicons name={name} size={size} color={color} />;
         },
       })}
     >

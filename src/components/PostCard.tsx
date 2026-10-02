@@ -103,11 +103,10 @@ export default function PostCard({ post, onPress, onLikePress, onRepostPress }: 
 }
 
 const styles = StyleSheet.create({
-  card: {
+    card: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    // no border — modern social feeds use spacing only
   },
   repostBanner: {
     flexDirection: 'row',

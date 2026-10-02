@@ -8,16 +8,20 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import * as userService from '../services/userService';
 import * as postService from '../services/postService';
 import { toUiPost } from '../utils/formatPost';
 import { ApiPost } from '../services/types';
-import { colors, spacing, radius } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { spacing, radius } from '../theme/colors';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,15 +56,10 @@ export default function ProfileScreen() {
       )
     );
     try {
-      if (post.likedByViewer) {
-        await postService.unlikePost(post.id);
-      } else {
-        await postService.likePost(post.id);
-      }
+      if (post.likedByViewer) await postService.unlikePost(post.id);
+      else await postService.likePost(post.id);
     } catch {
-      setPosts((prev) =>
-        prev.map((p) => (p.id === post.id ? { ...p, ...post } : p))
-      );
+      setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, ...post } : p)));
     }
   };
 
@@ -77,17 +76,74 @@ export default function ProfileScreen() {
       )
     );
     try {
-      if (post.repostedByViewer) {
-        await postService.undoRepost(post.id);
-      } else {
-        await postService.repost(post.id);
-      }
+      if (post.repostedByViewer) await postService.undoRepost(post.id);
+      else await postService.repost(post.id);
     } catch {
       setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, ...post } : p)));
     }
   };
 
   if (!user) return null;
+
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    cover: {
+      height: 120 + insets.top,
+      paddingTop: insets.top,
+      backgroundColor: colors.primary,
+    },
+    profileHeader: {
+      alignItems: 'center',
+      paddingBottom: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    avatar: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.full,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: -40,
+      borderWidth: 3,
+      borderColor: colors.background,
+    },
+    avatarText: { color: colors.accent, fontWeight: '700', fontSize: 28 },
+    displayName: {
+      fontSize: 18,
+      fontWeight: '700',
+      marginTop: spacing.sm,
+      color: colors.text,
+    },
+    handle: { fontSize: 14, color: colors.textMuted },
+    bio: {
+      fontSize: 14,
+      color: colors.text,
+      marginTop: spacing.xs,
+      textAlign: 'center',
+    },
+    statsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
+    stat: { alignItems: 'center' },
+    statNumber: { fontWeight: '700', fontSize: 15, color: colors.text },
+    statLabel: { fontSize: 12, color: colors.textMuted },
+    signOutButton: {
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: radius.full,
+    },
+    signOutText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+    emptyText: {
+      textAlign: 'center',
+      color: colors.textMuted,
+      marginTop: spacing.xl,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -122,8 +178,17 @@ export default function ProfileScreen() {
       ) : (
         <FlatList
           data={posts}
-          keyExtractor={(item) => (item.repostedAt ? `${item.id}-repost-${item.repostedAt}` : item.id)}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+          keyExtractor={(item) =>
+            item.repostedAt ? `${item.id}-repost-${item.repostedAt}` : item.id
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
           renderItem={({ item }) => (
             <PostCard
               post={toUiPost(item)}
@@ -139,88 +204,3 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  cover: {
-    height: 120,
-    backgroundColor: colors.primary,
-  },
-  profileHeader: {
-    alignItems: 'center',
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -40,
-    borderWidth: 3,
-    borderColor: colors.background,
-  },
-  avatarText: {
-    color: colors.accent,
-    fontWeight: '700',
-    fontSize: 28,
-  },
-  displayName: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: spacing.sm,
-    color: colors.text,
-  },
-  handle: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  bio: {
-    fontSize: 14,
-    color: colors.text,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-    marginTop: spacing.md,
-  },
-  stat: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontWeight: '700',
-    fontSize: 15,
-    color: colors.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  signOutButton: {
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.full,
-  },
-  signOutText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    marginTop: spacing.xl,
-  },
-});
